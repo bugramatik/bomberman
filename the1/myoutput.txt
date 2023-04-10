@@ -1,0 +1,5 @@
+gcc -c -o src/main.o src/main.c -Wall -g -Iinclude
+gcc -o bin/bgame src/main.o -Wall -g
+bin/bgame < input1.txt
+./bomber 1000 20 20 ./bomber 1000 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 
+20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 
