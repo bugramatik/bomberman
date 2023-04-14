@@ -54,14 +54,16 @@ int main(int argc, char *argv[]) {
             /* Child Process */
 
             // Redirect the bomber stdin and stdout to the pipe
-            close(bombers[i].fd[0]);
             dup2(bombers[i].fd[1], STDIN_FILENO);
             dup2(bombers[i].fd[1], STDOUT_FILENO);
+
+            close(bombers[i].fd[0]);
             close(bombers[i].fd[1]);
+
 
             char bomber_executable_path[256];
             sprintf(bomber_executable_path, "./src/%s", bomber_arguments[i][0]);
-
+            
             // Execute the bomber
             execv(bomber_executable_path, bomber_arguments[i]);
 
@@ -104,7 +106,6 @@ int main(int argc, char *argv[]) {
             if (fds[i].revents & POLLIN){
                 printf("geldi\n");
                 im incoming_message;
-                read(fds[i].fd, &incoming_message, sizeof(im));
                 ssize_t bytes_read = read(fds[i].fd, &incoming_message, sizeof(im));
                 if (bytes_read < 0) {
                     perror("read error");
@@ -113,25 +114,43 @@ int main(int argc, char *argv[]) {
                     // Nothing was read
                     printf("Nothing was read\n");
                 } else {
-                    printf("Incoming message type: %d\n", incoming_message.type);
+                    // Message was read
+                    printf("Bakam %d\n \n\n" ,incoming_message.data.target_position.y);
+                    switch (incoming_message.type) {
+                        case BOMBER_START:
+                            printf("Received BOMBER_START message\n");
+                            om location_message;
+                            location_message.type = BOMBER_LOCATION;
+                            location_message.data.new_position.x = bomber_coordinates[i][0];
+                            location_message.data.new_position.y = bomber_coordinates[i][1];
+                            send_message(fds[i].fd, &location_message);
+                            break;
+                        case BOMBER_SEE:
+                            printf("Received BOMBER_SEE message\n");
+                            od visible_objects[25];
+                            unsigned int object_count;
+
+                            om see_message;
+                            see_message.type = BOMBER_VISION;
+
+
+
+                            break;
+                        case BOMBER_MOVE:
+                            printf("Received BOMBER_MOVE message\n");
+                            break;
+                        case BOMBER_PLANT:
+                            printf("Received BOMBER_PLANT message\n");
+                            break;
+                        case BOMB_EXPLODE:
+                            printf("Received BOMB_EXPLODE message\n");
+                            break;
+                        default:
+                            fprintf(stderr, "Unknown message type received\n");
+                            break;
+                    }
                 }
-                printf(" Bakam %d\n \n\n" ,incoming_message.type);
-                switch (incoming_message.type) {
-                    case BOMBER_START:
-                        printf("Received BOMBER_START message\n");
-                        break;
-                    case BOMBER_SEE:
-                        break;
-                    case BOMBER_MOVE:
-                        break;
-                    case BOMBER_PLANT:
-                        break;
-                    case BOMB_EXPLODE:
-                        break;
-                    default:
-                        fprintf(stderr, "Unknown message type received\n");
-                        break;
-                }
+                    
             }
         }
 
