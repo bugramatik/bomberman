@@ -89,7 +89,6 @@ int main(int argc, char *argv[]) {
     int active_bomber_count = bomber_count;
     // Controller loop
     while(active_bomber_count > 0){
-        printf("geldi\n");
 
         // Poll the bomber pipes to see if there's any input
         int timeout = 1;
@@ -103,6 +102,7 @@ int main(int argc, char *argv[]) {
         //Iterate over the pollfd array
         for (int i = 0; i< bomber_count; i++){
             if (fds[i].revents & POLLIN){
+                printf("geldi\n");
                 im incoming_message;
                 read(fds[i].fd, &incoming_message, sizeof(im));
                 ssize_t bytes_read = read(fds[i].fd, &incoming_message, sizeof(im));
