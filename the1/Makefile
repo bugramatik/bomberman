@@ -5,10 +5,10 @@ INCDIR = include
 SRCDIR = src
 BINDIR = bin
 
-_OBJ = main.o message.o
+_OBJ = main.o message.o utils.o
 OBJ = $(patsubst %,$(SRCDIR)/%,$(_OBJ))
 
-INPUT_FILE ?= input1.txt
+INPUT_FILE ?= input2.txt
 
 all: $(BINDIR)/bgame run
 
