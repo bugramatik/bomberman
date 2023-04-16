@@ -162,45 +162,22 @@ void handle_explosion(int bomb_index, Bomb* bombs, int bomb_count, int obstacles
                     min_distance_index = killed_bomber_indices_in_explosion[i];
                 }
             }
-            if (equally_close_to_center_bomber_count == 1){
-                bombers[min_distance_index].is_winner = 1;
-                bombers[min_distance_index].is_killed = 0;
-                (*bomber_alive_count)++;
-            }
-            else{ // There are more than one bomber equally close to the center, randomly choose one of them
+
+            if (equally_close_to_center_bomber_count != 1){ // There are more than one bomber equally close to the center, randomly choose one of them
                 int random_index = rand() % equally_close_to_center_bomber_count;
-                bombers[killed_bomber_indices_in_explosion[random_index]].is_winner = 1;
-                bombers[killed_bomber_indices_in_explosion[random_index]].is_killed = 0;
-                (*bomber_alive_count)++;
+                for (int j = 0; j < 4; j++){
+                    if (distances_to_center[j] == min_distance){
+                        if (random_index == 0){
+                            min_distance_index = killed_bomber_indices_in_explosion[j];
+                            break;
+                        }
+                        random_index--;
+                    }
+                }
             }
             bombers[killed_bomber_indices_in_explosion[min_distance_index]].is_winner = 1;
             bombers[killed_bomber_indices_in_explosion[min_distance_index]].is_killed = 0;
             (*bomber_alive_count)++;
         }
     }
-
-
-
-    if (bomber_count - (*bomber_alive_count) == 1){
-// If there is only one bomber left, it wins
-        for (int l = 0; l < bomber_count; l++){
-            if (bombers[l].is_killed == 0){
-                bombers[l].is_winner = 1;
-            }
-        }
-
-    }
-
-}
-
-
-// Winnerin is_killed duzeltmeyi unutma
-if (bomber_count - (*bomber_alive_count) == 1){
-// If there is only one bomber left, it wins
-for (int l = 0; l < bomber_count; l++){
-if (bombers[l].is_killed == 0){
-bombers[l].is_winner = 1;
-}
-}
-
 }

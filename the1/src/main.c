@@ -96,7 +96,8 @@ int main(int argc, char *argv[]) {
     int active_bomber_count = bomber_count;
     // Controller loop
     while(active_bomber_count > 0){
-
+        // TODO: bomb kalirsa oyun bittikten sonra
+        
         // Polling the bomber pipes to see if there's any input
         int timeout = 1;
         int ready_bomber_fds = poll(bomber_fds, bomber_count, timeout);
@@ -121,7 +122,9 @@ int main(int argc, char *argv[]) {
                     //Message was read
                     if (incoming_message.type == BOMB_EXPLODE) {
                         printf("Received BOMB_EXPLODE message\n");
-                        handle_explosion(i, bombs, bomb_count, obstacles, obstacle_count, bombers, bomber_count, bomber_fds);
+                        handle_explosion(i, bombs, bomb_count, obstacles, obstacle_count, bombers, bomber_count,
+                                         bomber_fds,
+                                         map_width, map_height, &active_bomber_count, bomber_coordinates);
                     }
                 }
             }
@@ -153,7 +156,7 @@ int main(int argc, char *argv[]) {
                             printf("Received BOMBER_SEE message\n");
                             od visible_objects[25];
                             int object_count = gather_visible_objects(bomber_coordinates[i][0], bomber_coordinates[i][1],
-                                                                               obstacles, obstacle_count, bomber_coordinates,
+                                                                               obstacles, obstacle_count, bomber_coordinates, bombers,
 
                                                                                bomber_count, visible_objects,map_width, map_height);
                             // Sending BOMBER_VISION message
@@ -171,7 +174,7 @@ int main(int argc, char *argv[]) {
                             unsigned int new_y = incoming_message.data.target_position.y;
 
                             int is_move_valid = check_move(bomber_coordinates[i][0], bomber_coordinates[i][1], obstacles, obstacle_count,
-                                       bomber_coordinates ,bomber_count, map_width, map_height, new_x, new_y);
+                                       bomber_coordinates , bombers, bomber_count, map_width, map_height, new_x, new_y);
                             if(is_move_valid){
                                 bomber_coordinates[i][0] = new_x;
                                 bomber_coordinates[i][1] = new_y;
