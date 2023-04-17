@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
 
 
             char bomber_executable_path[256];
-            sprintf(bomber_executable_path, "./%s", bomber_arguments[i][0]);
+            sprintf(bomber_executable_path, "./src/%s", bomber_arguments[i][0]);
 
             // Execute the bomber
             execv(bomber_executable_path, bomber_arguments[i]);
