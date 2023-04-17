@@ -8,6 +8,8 @@
 #include "../include/utils.h"
 #include "../include/bomber.h"
 #include "../include/logging.h"
+// TODO: bomblar sonda reaplenirken explode mesaji gondermeli
+// TODO: patlamanin centerina gore secim yapmak gerekiyo
 
 int main(int argc, char *argv[]) {
 
@@ -65,7 +67,7 @@ int main(int argc, char *argv[]) {
 
 
             char bomber_executable_path[256];
-            sprintf(bomber_executable_path, "./src/%s", bomber_arguments[i][0]);
+            sprintf(bomber_executable_path, "./%s", bomber_arguments[i][0]);
 
             // Execute the bomber
             execv(bomber_executable_path, bomber_arguments[i]);
@@ -86,6 +88,7 @@ int main(int argc, char *argv[]) {
 
 
 
+    //TODO: center 0,0 a cek
 
     // Creating bomber and bomb pollfd arrays
     struct pollfd* bomb_fds  = NULL;
@@ -96,11 +99,27 @@ int main(int argc, char *argv[]) {
     }
 
     int active_bomber_count = bomber_count;
+    int active_bomb_count = 0;
     int game_over = 0;
+    int remaining_bombs_exploded = 0;
     // Controller loop
     while(active_bomber_count > 0) {
 
-        if (game_over == 1) {
+        if(remaining_bombs_exploded == 1) {
+             int remaining_bombs;
+
+            do {
+                remaining_bombs = 0;
+                usleep(1000); // Sleep for 1ms to prevent busy waiting.
+
+                for (int i = 0; i < bomb_count; ++i) {
+                    if (!bombs[i].exploded) {
+                        remaining_bombs = 1;
+                        break;
+                    }
+                }
+            } while (remaining_bombs);
+
             break;
         }
 
@@ -115,6 +134,11 @@ int main(int argc, char *argv[]) {
         }
         //Iterating over the bomb pollfd array
         for (int i = 0; i < bomb_count; i++) {
+
+            if (game_over == 1 && active_bomb_count == 0) {
+                remaining_bombs_exploded = 1;                
+                break;
+            }
             if (bomb_fds[i].revents & POLLIN) {
                 im incoming_message;
                 ssize_t bytes_read = read(bomb_fds[i].fd, &incoming_message, sizeof(im));
@@ -123,6 +147,7 @@ int main(int argc, char *argv[]) {
                     exit(EXIT_FAILURE);
                 } else if (bytes_read == 0) {
                     // Nothing was read
+                    
                 } else {
                     //Message was read
                     imp in;
@@ -133,13 +158,14 @@ int main(int argc, char *argv[]) {
                         handle_explosion(i, bombs, bomb_count, obstacles, obstacle_count, bombers, bomber_count,
                                          bomber_fds,
                                          map_width, map_height, &active_bomber_count, bomber_coordinates);
+                        active_bomb_count--;
                     }
                 }
             }
         }
 
         //Iterating over the bomber pollfd array
-        for (int i = 0; i < bomber_count; i++) {
+        for (int i = 0; i < bomber_count && !game_over; i++) {
             if (bomber_fds[i].revents & POLLIN) {
                 im incoming_message;
                 ssize_t bytes_read = read(bomber_fds[i].fd, &incoming_message, sizeof(im));
@@ -178,10 +204,12 @@ int main(int argc, char *argv[]) {
                         }
                         continue;
                     }
+                    
+                    
                     omp out;
                     out.pid = bombers[i].pid;
                     switch (incoming_message.type) {
-                        case BOMBER_START:
+                        case BOMBER_START:{
                             om location_message;
                             location_message.type = BOMBER_LOCATION;
                             location_message.data.new_position.x = bomber_coordinates[i][0];
@@ -189,8 +217,8 @@ int main(int argc, char *argv[]) {
                             send_message(bomber_fds[i].fd, &location_message);
                             out.m = &location_message;
                             print_output(NULL, &out, NULL, NULL);
-                            break;
-                        case BOMBER_SEE:
+                            break;}
+                        case BOMBER_SEE:{
                             od visible_objects[25];
                             int object_count = gather_visible_objects(bomber_coordinates[i][0],
                                                                       bomber_coordinates[i][1],
@@ -198,7 +226,7 @@ int main(int argc, char *argv[]) {
                                                                       bombers,
 
                                                                       bomber_count, visible_objects, map_width,
-                                                                      map_height);
+                                                                      map_height,bombs,bomb_count);
                             // Sending BOMBER_VISION message
                             om see_message;
                             see_message.type = BOMBER_VISION;
@@ -209,8 +237,8 @@ int main(int argc, char *argv[]) {
                             send_object_data(bomber_fds[i].fd, object_count, visible_objects);
                             out.m = &see_message;
                             print_output(NULL, &out, NULL, visible_objects);
-                            break;
-                        case BOMBER_MOVE:
+                            break;}
+                        case BOMBER_MOVE:{
                             unsigned int new_x = incoming_message.data.target_position.x;
                             unsigned int new_y = incoming_message.data.target_position.y;
 
@@ -231,8 +259,8 @@ int main(int argc, char *argv[]) {
                             send_message(bomber_fds[i].fd, &move_location_message);
                             out.m = &move_location_message;
                             print_output(NULL, &out, NULL, NULL);
-                            break;
-                        case BOMBER_PLANT:
+                            break;}
+                        case BOMBER_PLANT:{
                             unsigned int bomb_x = bomber_coordinates[i][0];
                             unsigned int bomb_y = bomber_coordinates[i][1];
                             unsigned int radius = incoming_message.data.bomb_info.radius;
@@ -241,12 +269,14 @@ int main(int argc, char *argv[]) {
 
                             if (!is_bomb_at_location(bomb_x, bomb_y, bombs, bomb_count)) {
                                 plant_success = 1;
+                                active_bomb_count++;
                                 bombs = realloc(bombs, sizeof(Bomb) * (bomber_count + 1));
                                 Bomb new_bomb;
                                 new_bomb.x = bomb_x;
                                 new_bomb.y = bomb_y;
                                 new_bomb.explosion_radius = radius;
                                 new_bomb.explosion_interval = interval;
+                                new_bomb.exploded = 0;
                                 if (PIPE(new_bomb.fd) == -1) {
                                     perror("socketpair");
                                     exit(EXIT_FAILURE);
@@ -265,7 +295,7 @@ int main(int argc, char *argv[]) {
                                     close(new_bomb.fd[0]);
                                     close(new_bomb.fd[1]);
 
-                                    execl("./src/bomb", "bomb", interval_str, (char *) NULL);
+                                    execl("./bomb", "bomb", interval_str, (char *) NULL);
 
                                     // If execl fails, exit
                                     perror("execl");
@@ -288,8 +318,7 @@ int main(int argc, char *argv[]) {
                                     }
                                     bomb_fds[bomb_count - 1].fd = new_bomb.fd[0];
                                     bomb_fds[bomb_count - 1].events = POLLIN;
-                                }
-                            }
+                                }}
 
                             // Sending BOMBER_PLANT_RESULT message
                             om plant_result_message;
@@ -299,6 +328,7 @@ int main(int argc, char *argv[]) {
                             out.m = &plant_result_message;
                             print_output(NULL, &out, NULL, NULL);
                             break;
+                            }
                         default:
                             fprintf(stderr, "Unknown message type received\n");
                             break;
@@ -310,24 +340,7 @@ int main(int argc, char *argv[]) {
 
         usleep(1000);
     }
-    for (int i = 0; i < bomb_count; i++) {
-        if (bombs[i].pid != -1) {
-            // Check if the process is still running
-            int running = (kill(bombs[i].pid, 0) == 0);
-            if (running) {
-                // Bomb process still running, terminate it
-                kill(bombs[i].pid, SIGTERM);
-                // Wait for the process to terminate
-                int status;
-                pid_t child_pid = waitpid(bombs[i].pid, &status, 0);
-                if (child_pid == -1) {
-                    perror("waitpid");
-                    exit(EXIT_FAILURE);
-                }
-            }
-            bombs[i].pid = -1;
-        }
-    }
+
     free(bomb_fds);
 
     // Free allocated memory

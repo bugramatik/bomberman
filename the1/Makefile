@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -g
+CFLAGS = -Wall -g 
 
 INCDIR = include
 SRCDIR = src
@@ -8,7 +8,7 @@ BINDIR = bin
 _OBJ = main.o message.o utils.o logging.o
 OBJ = $(patsubst %,$(SRCDIR)/%,$(_OBJ))
 
-INPUT_FILE ?= input2.txt
+INPUT_FILE ?= input1.txt
 
 all: $(BINDIR)/bgame run
 

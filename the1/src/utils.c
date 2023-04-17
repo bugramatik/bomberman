@@ -11,7 +11,7 @@ int gather_visible_objects(unsigned int x, unsigned int y,
                                     int obstacles[][3], int obstacle_count,
                                     int bomber_coordinates[][2], Bomber* bombers, int bomber_count,
                                     od visible_objects[],
-                                    int map_width, int map_height) {
+                                    int map_width, int map_height, Bomb* bombs, int bomb_count) {
     unsigned int object_count = 0;
     int dx[] = {0, 0, -1, 1}; // Up, Down, Left, Right
     int dy[] = {-1, 1, 0, 0}; // Up, Down, Left, Right
@@ -51,12 +51,31 @@ int gather_visible_objects(unsigned int x, unsigned int y,
                     visible_objects[object_count].position.y = new_y;
                     visible_objects[object_count].type = BOMBER;
                     ++object_count;
-                    break;
                 }
             }
 
-            // Add code to check for bombs when their implementation is available
+            // Check for bombs
+            for (int i = 0; i<bomb_count; i++){
+                if(bombs[i].exploded == 0 && bombs[i].x == new_x && bombs[i].y == new_y){
+
+                    // printf("\n\nBomb %d found: %d\n\n", i, bombs[i].exploded);
+
+                    visible_objects[object_count].position.x = new_x;
+                    visible_objects[object_count].position.y = new_y;
+                    visible_objects[object_count].type = BOMB;
+                    ++object_count;
+                }
+            }
         }
+    }
+
+    for (int i = 0; i < bomb_count; i++){ // Checks if there is any bomb on current position
+        if (bombs[i].exploded == 0 && bombs[i].x == x && bombs[i].y == y) {
+                    visible_objects[object_count].position.x = x;
+                    visible_objects[object_count].position.y = y;
+                    visible_objects[object_count].type = BOMB;
+                    ++object_count;
+                }
     }
 
     return object_count;
@@ -101,6 +120,7 @@ int is_bomb_at_location(unsigned int x, unsigned int y, Bomb bombs[], int bomb_c
 void handle_explosion(int bomb_index, Bomb* bombs, int bomb_count, int obstacles[][3], int obstacle_count,
                       Bomber* bombers, int bomber_count, struct pollfd* bomber_fds, int map_width, int map_height, int* bomber_alive_count, int bomber_coordinates[][2]) {
     Bomb exploded_bomb = bombs[bomb_index];
+    bombs[bomb_index].exploded = 1;
     int radius = exploded_bomb.explosion_radius;
     int dx[] = {0, 0, 0, -1, 1}; // Center, Up, Down, Left, Right
     int dy[] = {0, -1, 1, 0, 0}; // Center, Up, Down, Left, Right
@@ -170,7 +190,10 @@ void handle_explosion(int bomb_index, Bomb* bombs, int bomb_count, int obstacles
         } else { // If more than one last bombers died at same time, bomber further to the center wins
             for (int i = 0; i < killed_bomber_count_in_explosion; i++){
                 //TODO: center 0,0 da olabilir
-                int distance = abs(killed_bomber_indices_in_explosion[i] - map_width/2) + abs(killed_bomber_indices_in_explosion[i] - map_height/2);
+                int tmp_bomber_x = bomber_coordinates[killed_bomber_indices_in_explosion[i]][0];
+                int tmp_bomber_y = bomber_coordinates[killed_bomber_indices_in_explosion[i]][1];
+
+                int distance = abs(tmp_bomber_x - exploded_bomb.x) + abs(tmp_bomber_y - exploded_bomb.y);
                 distances_to_center[i] = distance;
             }
 

@@ -8,7 +8,7 @@ int gather_visible_objects(unsigned int x, unsigned int y,
                                     int obstacles[][3], int obstacle_count,
                                     int bomber_coordinates[][2], Bomber* bombers, int bomber_count,
                                     od visible_objects[],
-                                    int map_width, int map_height);
+                                    int map_width, int map_height,Bomb* bombs, int bomb_count);
 
 int check_move(unsigned int x, unsigned int y, int obstacles[][3], int obstacle_count,
                int bomber_coordinates[][2], Bomber* bombers, int bomber_count, int map_width, int map_height, unsigned int new_x, unsigned new_y);

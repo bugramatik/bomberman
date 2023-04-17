@@ -18,6 +18,7 @@ typedef struct {
     unsigned int y;
     unsigned int explosion_radius;
     unsigned int explosion_interval;
+    int exploded;
 } Bomb;
 
 #endif // BOMB_H
