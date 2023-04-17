@@ -13,7 +13,7 @@ INPUT_FILE ?= input1.txt
 all: $(BINDIR)/bgame run
 
 run: $(BINDIR)/bgame
-	$< < $(INPUT_FILE)
+	$< < $(INPUT_FILE) > myoutput.txt
 
 $(BINDIR)/bgame: $(OBJ)
 	@mkdir -p $(BINDIR)

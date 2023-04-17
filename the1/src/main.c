@@ -8,8 +8,6 @@
 #include "../include/utils.h"
 #include "../include/bomber.h"
 #include "../include/logging.h"
-// TODO: bomblar sonda reaplenirken explode mesaji gondermeli
-// TODO: patlamanin centerina gore secim yapmak gerekiyo
 
 int main(int argc, char *argv[]) {
 
@@ -101,25 +99,10 @@ int main(int argc, char *argv[]) {
     int active_bomber_count = bomber_count;
     int active_bomb_count = 0;
     int game_over = 0;
-    int remaining_bombs_exploded = 0;
     // Controller loop
     while(active_bomber_count > 0) {
 
-        if(remaining_bombs_exploded == 1) {
-             int remaining_bombs;
-
-            do {
-                remaining_bombs = 0;
-                usleep(1000); // Sleep for 1ms to prevent busy waiting.
-
-                for (int i = 0; i < bomb_count; ++i) {
-                    if (!bombs[i].exploded) {
-                        remaining_bombs = 1;
-                        break;
-                    }
-                }
-            } while (remaining_bombs);
-
+        if(active_bomb_count == 0 && game_over == 1) {
             break;
         }
 
@@ -132,13 +115,9 @@ int main(int argc, char *argv[]) {
             perror("poll");
             exit(EXIT_FAILURE);
         }
+
         //Iterating over the bomb pollfd array
         for (int i = 0; i < bomb_count; i++) {
-
-            if (game_over == 1 && active_bomb_count == 0) {
-                remaining_bombs_exploded = 1;                
-                break;
-            }
             if (bomb_fds[i].revents & POLLIN) {
                 im incoming_message;
                 ssize_t bytes_read = read(bomb_fds[i].fd, &incoming_message, sizeof(im));
@@ -151,7 +130,7 @@ int main(int argc, char *argv[]) {
                 } else {
                     //Message was read
                     imp in;
-                    in.pid = bombers[i].pid;
+                    in.pid = bombs[i].pid;
                     in.m = &incoming_message;
                     print_output(&in, NULL, NULL, NULL);
                     if (incoming_message.type == BOMB_EXPLODE) {
