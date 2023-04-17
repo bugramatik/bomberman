@@ -5,7 +5,7 @@ INCDIR = include
 SRCDIR = src
 BINDIR = bin
 
-_OBJ = main.o message.o utils.o
+_OBJ = main.o message.o utils.o logging.o
 OBJ = $(patsubst %,$(SRCDIR)/%,$(_OBJ))
 
 INPUT_FILE ?= input2.txt

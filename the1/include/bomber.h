@@ -8,6 +8,7 @@ typedef struct {
     int fd[2];
     int is_killed;
     int is_winner;
+    int sent_last_message;
 } Bomber;
 
 typedef struct {
